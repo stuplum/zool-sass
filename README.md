@@ -3,7 +3,7 @@
 A Hapi.js plugin for compiling and serving Sass stylesheets using [node-sass](https://github.com/andrew/node-sass).
 This is a port of their express middleware to a hapi.js plugin. 
 
-This plugin is essentially a copy of hapi-sass but with a different route. Use hapi-sass instead of this plugin.
+This plugin is essentially a copy of [hapi-sass](https://github.com/mdarnall/hapi-sass) but with a different route. Use hapi-sass instead of this plugin.
 
 ### Overview
 
