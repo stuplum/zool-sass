@@ -32,7 +32,7 @@ var internals = {
     },
 
     log: function log(key, val) {
-        console.error(' hapi-sass:  \033[90m%s :\033[0m \033[36m%s\033[0m', key, val);
+        console.error(' zool-sass:  \033[90m%s :\033[0m \033[36m%s\033[0m', key, val);
     }
 };
 
@@ -48,7 +48,7 @@ exports.register = function (server, options, next) {
     // Source dir required
     var src = settings.src;
     if (!src) {
-        next(new Boom('hapi-sass requires "src" directory'));
+        next(new Boom('zool-sass requires "src" directory'));
     }
 
     // Default dest dir to source
