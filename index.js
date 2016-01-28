@@ -1,146 +1,170 @@
-var fs = require('fs');
-var join = require('path').join;
-var resolve = require('path').resolve;
-var dirname = require('path').dirname;
+'use strict';
 
-var Boom = require('boom');
-var Hoek = require('hoek');
-var sass = require('node-sass');
-var mkdirp = require('mkdirp');
+const colors = require('colors');
 
-var internals = {
+const fs = require('fs');
+const join = require('path').join;
+const resolve = require('path').resolve;
+const dirname = require('path').dirname;
 
-    defaults: {
-        debug: false,
-        force: false,
-        entryPoint: '_index',
-        extension: 'scss',
-        src: './lib/sass',
-        dest: './public/css',
-        routePath: '/css/{module*}',
-        outputStyle: 'compressed',
-        sourceComments: false
-    },
+const Boom = require('boom');
+const Hoek = require('hoek');
+const sass = require('node-sass');
+const Inert = require('inert');
+const mkdirp = require('mkdirp');
 
-    error: function (reply, err) {
-        if (err.code == 'ENOENT') {
-            return reply(Boom.notFound());
-        }
-        else {
-            return reply(Boom.internal(err));
-        }
-    },
+colors.setTheme({
+    info: 'green',
+    help: 'cyan',
+    warn: 'yellow',
+    debug: 'blue',
+    error: 'red'
+});
 
-    log: function log(key, val) {
-        console.error(' zool-sass:  \033[90m%s :\033[0m \033[36m%s\033[0m', key, val);
+const internals = {};
+
+internals.defaults = {
+    debug: false,
+    force: false,
+    entryPoint: '_index',
+    extension: 'scss',
+    src: './lib/sass',
+    dest: './public/css',
+    routePath: '/css/{module*}',
+    outputStyle: 'compressed',
+    sourceComments: false
+};
+
+internals.log = function log(key, val) {
+    console.log(' zool-sass: ', `${key}: `.gray, val.cyan);
+};
+
+internals.debug = function log(key, val) {
+    console.log(' zool-sass: '.debug, `${key}: `.gray, val.cyan);
+};
+
+internals.error = function log(key, val) {
+    console.error(' zool-sass: '.error, `${key}: `.gray, val.cyan);
+};
+
+internals.warn = function log(key, val) {
+    console.error(' zool-sass: '.warn, `${key}: `.gray, val.cyan);
+};
+
+internals.handleError = function (err, reply) {
+    if (err.code == 'ENOENT') {
+        internals.warn('compile', 'not found');
+        return reply(Boom.notFound());
+    } else {
+        internals.error('compile', 'internal error');
+        return reply(Boom.internal(err));
     }
 };
 
 exports.register = function (server, options, next) {
 
-    var settings = Hoek.applyToDefaults(internals.defaults, options);
-    // Force compilation
-    var force = settings.force;
+    const config = Hoek.applyToDefaults(internals.defaults, options);
 
-    // Debug option
-    var debug = settings.debug;
-
-    // Source dir required
-    var src = settings.src;
-    if (!src) {
+    if (!config.src) {
         next(new Boom('zool-sass requires "src" directory'));
     }
 
-    // Default dest dir to source
-    var dest = settings.dest ? settings.dest : src;
+    config.dest = config.dest || config.src;
+
+    server.register(Inert, () => {});
 
     server.route({
         method: 'GET',
-        path: settings.routePath,
+        path: config.routePath,
         handler: function (request, reply) {
 
-            var componentName = request.params.module.replace('.css', '');
-            var componentPath = `${src}/${componentName}`;
+            const componentName = request.params.module.replace('.css', '');
+            const componentPath = `${config.src}/${componentName}`;
 
-            var cssPath  = resolve(join(dest, componentName + '.css'));
-            var sassPath = resolve(`${componentPath}/${settings.entryPoint}.${settings.extension}`);
-            var sassDir  = dirname(sassPath);
+            const cssPath = resolve(join(config.dest, componentName + '.css'));
+            const sassPath = resolve(`${componentPath}/${config.entryPoint}.${config.extension}`);
+            const sassDir = dirname(sassPath);
 
-            if (debug) {
-                internals.log('source ', sassPath);
-                internals.log('dest ', cssPath);
+            if (config.debug) {
+                internals.log('source (sassPath)', sassPath);
+                internals.log('dest (cssPath)', cssPath);
                 internals.log('sassDir ', sassDir);
             }
 
-            var compile = function () {
+            function compile() {
 
-                if (debug) {
+                if (config.debug) {
                     internals.log('read', sassPath);
                 }
 
-                sass.render({
-                    file: sassPath,
-                    includePaths: [sassDir].concat(settings.includePaths || []),
-                    imagePath: settings.imagePath,
-                    outputStyle: settings.outputStyle,
-                    sourceComments: settings.sourceComments
-                }, function(err, result){
+                function success(err, result) {
 
                     if (err) {
-                        internals.log('render ', err);
-                        return reply('The scss file was not found').code(404);
-                        //return internals.error(reply, err);
+                        return internals.handleError(err, reply);
                     }
 
-                    if (debug) {
+                    if (config.debug) {
                         internals.log('render', 'compilation ok');
                     }
 
                     mkdirp(dirname(cssPath), 0x1c0, function (err) {
+
                         if (err) {
                             return reply(err);
                         }
-                        fs.writeFile(cssPath, result.css, 'utf8', function (err) {
+
+                        fs.writeFile(cssPath, result.css, 'utf8', function () {
                             reply(result.css).type('text/css');
                         });
                     });
-                });
-            };
+                }
 
-            if (force) {
-                return compile();
+                sass.render({
+                    file: sassPath,
+                    includePaths: [sassDir].concat(config.includePaths || []),
+                    imagePath: config.imagePath,
+                    outputStyle: config.outputStyle,
+                    sourceComments: config.sourceComments
+                }, success);
             }
 
+            if (config.force) {
+                return compile();
+            }
 
             fs.stat(sassPath, function (err, sassStats) {
 
                 if (err) {
-                    return internals.error(reply, err);
+                    return internals.handleError(err, reply);
                 }
+
                 fs.stat(cssPath, function (err, cssStats) {
 
                     if (err) {
                         if (err.code == 'ENOENT') {
-                            // css has not been compiled
-                            if (debug) {
-                                internals.log('not found, compiling', cssPath);
+
+                            if (config.debug) {
+                                internals.error('not found, compiling', cssPath);
                             }
+
                             compile();
 
                         } else {
-                            internals.error(reply, err);
+                            internals.handleError(err, reply);
                         }
-                    }
-                    else { // compiled version exists, check mtimes
+                    } else {
 
-                        if (sassStats.mtime > cssStats.mtime) { // the sass version is newer
-                            if (debug) {
+                        const sassIsNewer = sassStats.mtime > cssStats.mtime;
+
+                        if (sassIsNewer) {
+
+                            if (config.debug) {
                                 internals.log('minified', cssPath);
                             }
+
                             compile();
-                        }
-                        else {
-                            // serve
+
+                        } else {
                             reply.file(cssPath);
                         }
 

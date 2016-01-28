@@ -13,6 +13,7 @@ pids
 logs
 results
 build
+/public
 .grunt
 .idea
 
