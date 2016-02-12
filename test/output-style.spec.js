@@ -4,7 +4,7 @@ const Hapi = require('hapi');
 
 describe('zool-sass: outputStyle', function () {
 
-    const temp = new Temp('zool-sass-tests');
+    const temp = new Temp('zool-sass-route');
 
     let server;
 
@@ -22,7 +22,7 @@ describe('zool-sass: outputStyle', function () {
         server = new Hapi.Server();
         server.connection({ port: 8000 });
 
-        server.register([{ register: require('../'), options: { src: temp.path, outputStyle: 'expanded' } }], done);
+        server.register([{ register: require('../lib/route'), options: { src: temp.path, outputStyle: 'expanded' } }], done);
     });
 
     it('should compile from a configured output style', function (done) {
