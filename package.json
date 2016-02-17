@@ -1,6 +1,6 @@
 {
   "name": "zool-sass",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A Hapi.js plugin for compiling and serving Sass stylesheets, essentially a copy of the hapi-sass plugin but with some small customisations",
   "main": "index.js",
   "scripts": {
@@ -40,7 +40,7 @@
     "inert": "3.2.0",
     "mkdirp": "^0.3.5",
     "node-sass": "^3.3.2",
-    "zool-utils": "0.1.1"
+    "zool-utils": "0.2.0"
   },
   "devDependencies": {
     "chai": "^3.2.0",
