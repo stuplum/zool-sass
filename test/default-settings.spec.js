@@ -62,7 +62,7 @@ describe('zool-sass: default settings', function () {
 
         server.inject({ method: 'GET', url: '/css/no-compile.css' }, function (response) {
             expect(response.statusCode).to.be.equal(500);
-            expect(response.payload).to.be.equal('An internal server error occurred');
+            expect(response.payload).to.be.equal('Error: Undefined variable: "$test-color".');
             done();
         });
 
