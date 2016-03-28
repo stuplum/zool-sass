@@ -1,6 +1,3 @@
 'use strict';
 
-module.exports = {
-    compiler: require('./lib/compiler'),
-    route: require('./lib/route')
-};
+module.exports = require('./lib/route');

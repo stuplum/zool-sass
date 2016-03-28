@@ -24,7 +24,7 @@ describe('zool-sass: route', function () {
         server = new Hapi.Server();
         server.connection({ port: 8000 });
 
-        server.register([{ register: require('../').route, options: { src: temp.path } }], done);
+        server.register([{ register: require('../'), options: { src: temp.path } }], done);
     });
 
     it('should be exported', function (done) {
